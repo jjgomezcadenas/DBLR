@@ -336,7 +336,6 @@ perCent     = 0.01
 perThousand = 0.001
 perMillion  = 0.000001
 
-ps = picosecond
 nm = nanometer 
 mol = mole
 micron = micrometer

@@ -1,7 +1,7 @@
 """
 Parameters defining NEW PMT + FEE
 """
-
+from math import *
 from system_of_units import *
 import numpy as np
 
@@ -11,6 +11,7 @@ np.set_printoptions(threshold='nan')
 offset = 700
 n_PMT = 12
 PMT_GAIN=4.5e6
+MAU_WindowSize = 512
 #V_GAIN=570*ohm*0.5 #Gain current --> V = IR Gain = R = 250 Ohm
 V_GAIN=250*ohm
 C = 6.2*nF # decoupling capacitor in pF

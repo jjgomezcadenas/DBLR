@@ -1,12 +1,11 @@
 """
 SADE: Signal Analysis and DEconvolution
-Pure python version
 JJGC June 2016
 """
 
-from math import *
 from PlotUtil import *
 from SadeSignals import *
+import DBLR as DB
 
 import numpy as np
 import os
@@ -22,28 +21,33 @@ import tables as tb
 len_signal_max = 1200000
 
 
-dataset_name = ["Kr83.z5cm.1ns","electrons.511keV.1ns","electrons.1275keV.1ns",
-                "electrons.2615keV.1ns","bb0nu.1ns","electrons.1275keV.1ns.15bar",
-                "electrons.2615keV.1ns.15bar","electrons.511keV.1ns.15bar"]
+dataset_name = ["Kr83.z5cm.1ns","Kr83.z10cm.1ns","Kr83.z15cm.1ns",
+                "electrons.511keV.1ns","electrons.1275keV.1ns",
+                "electrons.2615keV.1ns",
+                "bb0nu.1ns",
+                "Kr83.1ns.15bar",
+                "electrons.1275keV.1ns.15bar",
+                "electrons.2615keV.1ns.15bar","electrons.511keV.1ns.15bar",
+                "bb0nu.1ns.15bar"]
 
-dataset_s1l =[599000,599000,595000,595000,595000,595000,595000,595000]
-dataset_s1r =[600500,600500,600500,600500,600500,600500,600500,600500]
-dataset_s2l =[600500,601000,601000,601000,601000,601000,601000,601000]
-dataset_s2r =[680000,720000,1000000,1100000,1120000,1100000,1100000,720000]
+dataset_s1l = 599000
+dataset_s1r =600500 
+dataset_s2l =600500
+dataset_s2r =1100000
 
 saveHistos = True
 CPLOT={}
-CPLOT['Plots'] = False
-CPLOT['Areas'] = False
-CPLOT['Histograms'] = True
+CPLOT['Plots'] = True
+CPLOT['Areas'] = True
+CPLOT['Histograms'] = False
 
 CPLOT['plot_I'] = False
 CPLOT['plot_V'] = True
 CPLOT['plot_ADC'] = True
 CPLOT['plot_PE'] = True
-CPLOT['plot_spe'] = False
-CPLOT['plot_spe_fee'] = False
-CPLOT['plot_s1_mc'] = False
+CPLOT['plot_spe'] = True
+CPLOT['plot_spe_fee'] = True
+CPLOT['plot_s1_mc'] = True
 CPLOT['plot_s2_mc'] = True
 CPLOT['plot_s1_pmt'] = False
 CPLOT['plot_s2_pmt'] = False
@@ -56,13 +60,9 @@ CPLOT['plot_signal_inv_daq'] = False
 
 def SADE(path,histoPath,iset,nmin=0,nmax=100):
     
-    ds = SignalDef(dataset_name[iset], dataset_s1l[iset], dataset_s1r[iset], 
-                   dataset_s2l[iset], dataset_s2r[iset])
-    #ds = SignalDef("Kr83.z5cm.1ns", 599000, 600500, 600500, 680000)
-    #ds = SignalDef("electrons.511keV.1ns", 599000, 600500, 601000, 720000)
-    #ds = SignalDef("electrons.1275keV.1ns", 595000, 600500, 610000, 1000000)
-    #ds = SignalDef("electrons.2615keV.1ns", 595000, 600500, 610000, 1100000)
-
+    ds = SignalDef(dataset_name[iset], dataset_s1l, dataset_s1r, 
+                   dataset_s2l, dataset_s2r)
+    
     hdir = histoPath+dataset_name[iset]
     if not os.path.exists(hdir):
         os.makedirs(hdir)
@@ -81,16 +81,16 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100):
     #time vector
 
     #full histogram (1.2E+6 bins)
-    histo_t = np.arange(0.0, len_signal_max*1.+0.0, 1., dtype='Float32')
+    histo_t = np.arange(0.0, len_signal_max*1.+0.0, 1., dtype=np.double)
 
     #reduced histogram for signal (clip left part of signal, include s1 and s2)
-    signal_t = np.arange(0.0, ds.len_signal*1.+0.0, 1., dtype='Float32')
+    signal_t = np.arange(0.0, ds.len_signal*1.+0.0, 1., dtype=np.double)
 
     #reduced histogram for s2 (clip left part of signal, from zero to t_S1 included)
-    s2_t = np.arange(0.0, ds.len_s2*1.+0.0, 1., dtype='Float32')
+    s2_t = np.arange(0.0, ds.len_s2*1.+0.0, 1., dtype=np.double)
 
     #reduced histogram for S1 (clip left and right part of signal, leaving a window for S1)
-    s1_t = np.arange(0.0, ds.len_s1*1.+0.0, 1., dtype='Float32')
+    s1_t = np.arange(0.0, ds.len_s1*1.+0.0, 1., dtype=np.double)
     
     s2_histo_PE = np.zeros(ds.len_s2)  #number of PE for S2
     s1_histo_PE = np.zeros(ds.len_s1)  # number of PE for S1
@@ -180,81 +180,50 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100):
 
         # print "calling MauDeconv"
    
-        signal_dec = MauDeconv(signal_t_daq, signal_daq, coef, n_sigma = 2)
+        #signal_dec = MauDeconv(signal_t_daq, signal_daq, coef, n_sigma = 2)
         #s2_dec = MD.MauDeconv(s2t_daq, s2_daq, coef, n_sigma = 2)
+        signal_dec = DB.BLR(signal_t_daq, signal_daq, coef, n_sigma = 2, NOISE_ADC=0.5)
 
-        DSGN['spe_I'] = Signal(t_spe, pulse_spe,signal_name ='SPE', threshold = 0.1*muA, 
-                        units='muA', downscale=False)
-        DSGN['spe_V'] = Signal(t_spe, signal_spe,signal_name ='SPE',threshold = 0.1*mV, 
-                        units='mV', downscale=False)
-        DSGN['spe_ADC'] = Signal(t_spe, signal_spe/FP.voltsToAdc,signal_name ='SPE',
-                                threshold = 0.1*adc, units='adc', downscale=False)
+        DSGN['spe_I'] = Signal(t_spe, pulse_spe, threshold = 0.01*muA)
+        DSGN['spe_V'] = Signal(t_spe, signal_spe,threshold = 0.01*mV)
+        DSGN['spe_ADC'] = Signal(t_spe, signal_spe/FP.voltsToAdc, threshold = 0.01*adc)
 
-        DSGN['spe_FEE'] = Signal(t_spe, spe_fee, signal_name ='SPE, FEE response (V)',
-                                    threshold = 0, units='mV', downscale=False)
+        DSGN['spe_FEE'] = Signal(t_spe, spe_fee, threshold = 0)
+        DSGN['spe_FEE_NN'] = Signal(t_spe, spe_fee_no_noise, threshold = 0)
+        DSGN['spe_DAQ'] = Signal(spe_t_daq, spe_DAQ, threshold = 0,  stype='DAC')
 
-        DSGN['spe_FEE_NN'] = Signal(t_spe, spe_fee_no_noise, 
-                                    signal_name ='SPE, FEE response (no noise) (V)',
-                                    threshold = 0, units='mV', downscale=False)
-
-        DSGN['spe_DAQ'] = Signal(spe_t_daq, spe_DAQ, signal_name ='SPE, FEE response (ADC)',
-                                threshold = 0., units='adc', stype='DAC', downscale=False)
-
-        DSGN['s2_MC'] = Signal(s2_t, s2_histo_PE, signal_name ='S2 12 chan average (PES)',
-                               threshold = 0.01*pes, units = 'pes')
-        DSGN['s1_MC'] = Signal(s1_t, s1_histo_PE, signal_name ='S1 12 chan average (PES)',
-                               threshold = 0.001*pes, units = 'pes', downscale=False)
-        DSGN['s2_PMT'] = Signal(s2_t, s2_PE,signal_name ='S2, PMT response (I)',
-                                threshold = 0.01*muA, units='muA')
-        DSGN['s1_PMT'] = Signal(s1_t, s1_PE, signal_name ='S1, PMT response (I)', 
-                                units='muA', downscale=False)
-        DSGN['s2_PMT_V'] = Signal(s2_t, fee.VSignal(s2_PE),signal_name ='S2, PMT response (V)',
-                                  threshold = 0.01*mV, units='mV')
-        DSGN['s1_PMT_V'] = Signal(s1_t, fee.VSignal(s1_PE), signal_name ='S1, PMT response (V)',
-                                  units='mV', downscale=False)
+        DSGN['s2_MC'] = Signal(s2_t, s2_histo_PE,threshold = 0.01*pes, downscale=True)
+        DSGN['s1_MC'] = Signal(s1_t, s1_histo_PE, threshold = 0.001*pes, downscale=True)
+                               
+        DSGN['s2_PMT'] = Signal(s2_t, s2_PE,threshold = 0.01*muA, downscale=True)
+        DSGN['s1_PMT'] = Signal(s1_t, s1_PE, threshold = 0.01*muA, downscale=True)
+        DSGN['s2_PMT_V'] = Signal(s2_t, fee.VSignal(s2_PE),threshold = 0.01*mV, downscale=True)
+        DSGN['s1_PMT_V'] = Signal(s1_t, fee.VSignal(s1_PE), threshold = 0.01*mV, downscale=True)
 
         DSGN['signal_PMT_ADC'] = Signal(signal_t, fee.VSignal(signal_PE)/FP.voltsToAdc,
-                                    signal_name ='Signal, PMT response (ADC)',
-                                    threshold = 0.01*adc, units='adc')
+                                    threshold = 0.01*adc, downscale=True)
 
         DSGN['s2_PMT_ADC'] = Signal(s2_t, fee.VSignal(s2_PE)/FP.voltsToAdc,
-                                    signal_name ='S2, PMT response (ADC)',
-                                    threshold = 0.01*adc, units='adc')
+                                    threshold = 0.01*adc, downscale=True)
         DSGN['s1_PMT_ADC'] = Signal(s1_t, fee.VSignal(s1_PE)/FP.voltsToAdc, 
-                                    signal_name ='S1, PMT response (ADC)',
-                                    threshold = 0.01*adc,
-                                    units='adc', downscale=False)
+                                    threshold = 0.01*adc,downscale=False)
 
-        DSGN['s2_FEE'] = Signal(s2_t, s2_fee,threshold = 0, 
-                                signal_name ='S2, FEE response (V)',
-                                units='mV')
-        DSGN['s1_FEE_NN'] = Signal(s1_t, s1_fee_no_noise,
-                                    signal_name ='S1, FEE response, no noise (V)',
-                                    threshold = 0, units='mV', downscale=False)
-        DSGN['s1_FEE'] = Signal(s1_t, s1_fee, signal_name ='S1, FEE response (V)',
-                                    threshold = 0, units='mV', downscale=False)
+        DSGN['s2_FEE'] = Signal(s2_t, s2_fee,threshold = 0, downscale=False)
+        DSGN['s1_FEE_NN'] = Signal(s1_t, s1_fee_no_noise,threshold = 0, downscale=False)
+        DSGN['s1_FEE'] = Signal(s1_t, s1_fee, threshold = 0, downscale=False)
+                                    
 
         DSGN['signal_DAQ_off'] = Signal(signal_t_daq, signal_daq -FP.offset, 
-                                    signal_name ='Signal, DAQ offset',
-                                    threshold = 0.0, units='adc', stype='DAC', downscale=False)
+                                    threshold = 0, downscale=False)
 
-        DSGN['s2_DAQ'] = Signal(s2t_daq, s2_daq, signal_name ='S2, FEE response (ADC)',
-                                threshold = 0., units='adc', stype='DAC', downscale=False)
-        DSGN['s1_DAQ'] = Signal(s1t_daq, s1_daq, signal_name ='S1, FEE response (ADC)',
-                                threshold = 0., units='adc', stype='DAC', downscale=False)
+        DSGN['s2_DAQ'] = Signal(s2t_daq, s2_daq, threshold = 0, downscale=False)
+        DSGN['s1_DAQ'] = Signal(s1t_daq, s1_daq, 
+                                threshold = 0, stype='DAC', downscale=False)
 
         DSGN['signal_DAQ'] = Signal(signal_t_daq, signal_daq, 
-                                signal_name ='Signal, DAQ (ADC)',
-                                threshold = 0.1, units='adc', stype='DAC', downscale=False)
+                                threshold = 0, stype='DAC', downscale=False)
         DSGN['signal_R'] = Signal(signal_t_daq, signal_dec, 
-                                signal_name ='Signal, Deconvoluted (ADC)',
-                                threshold = 0.1, units='adc', stype='DAC', downscale=False)
-
-        # DSGN['s2_R'] = Signal(s2t_daq, s2_dec, signal_name ='S2, Deconvoluted (ADC)',
-        #                         threshold = 0., units='adc', stype='DAC', downscale=False)
-
-        # DSGN['s1_R'] = Signal(s1t_daq, s1_dec, signal_name ='S1, Deconvoluted (ADC)',
-        #                         threshold = 0., units='adc', downscale=False)
+                                threshold = 0, stype='DAC', downscale=False)
 
 
         if CPLOT['Plots']:
@@ -270,14 +239,13 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100):
 
     if saveHistos == False or CPLOT['Histograms'] == False:
         plt.show()
-    #plt.draw()
     
 
 
 if __name__ == '__main__':
 
     import cProfile
-    iset = 6  #iset: Kr =0, e511=1, e1275=2, e2651=3, bb0nu=4
+    iset = 0  
     frst_evt = 0
     lst_evt = 10
     path = "/Users/jjgomezcadenas/Documents/Development/NEXT/data/1ns/"
