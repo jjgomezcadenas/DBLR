@@ -45,8 +45,8 @@ CPLOT['plot_I'] = False
 CPLOT['plot_V'] = True
 CPLOT['plot_ADC'] = True
 CPLOT['plot_PE'] = True
-CPLOT['plot_spe'] = True
-CPLOT['plot_spe_fee'] = True
+CPLOT['plot_spe'] = False
+CPLOT['plot_spe_fee'] = False
 CPLOT['plot_s1_mc'] = True
 CPLOT['plot_s2_mc'] = True
 CPLOT['plot_s1_pmt'] = False
@@ -100,9 +100,9 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100):
     spe = SP.SPE(pmt_gain=FP.PMT_GAIN,x_slope = 5*ns,x_flat = 1*ns)
     fee = FE.FEE(PMTG=FP.PMT_GAIN, C=FP.C,R= FP.R, 
                  f=FP.freq_LPF, fn=FP.freq_HPF, RG=FP.V_GAIN)
-    daq = FE.DAQ(NBITS=FP.NBITS, NBITS_FRAC=FP.NBITS_FRAC,
-                 time_sample=FP.time_DAQ, 
-                 LSB = 2*volt)
+    # daq = FE.DAQ(NBITS=FP.NBITS, NBITS_FRAC=FP.NBITS_FRAC,
+    #              time_sample=FP.time_DAQ, 
+    #              LSB = 2*volt)
 
     #open h5file
     h5file = tb.open_file(path+ds.h5file, mode = "r")
@@ -152,7 +152,7 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100):
         # wait()
 
         spe_fee = fee.FEESignal(pulse_spe, noise_rms=FP.NOISE_FEE_rms) #in single PMT
-        spe_t_daq,spe_DAQ = daq.DAQSignal(t_spe, spe_fee, noise_rms=0)
+        spe_t_daq,spe_DAQ = fee.DAQSignal(t_spe, spe_fee, noise_rms=0)
 
         # effect of electronics: pass filters and output voltage
         # add noise
@@ -162,9 +162,9 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100):
         s1_fee = fee.FEESignal(s1_PE, noise_rms=FP.NOISE_FEE_rms) #in single PMT
         
         #Signal out of DAQ
-        signal_t_daq, signal_daq = daq.DAQSignal(signal_t, signal_fee, noise_rms=0) 
-        s2t_daq, s2_daq = daq.DAQSignal(s2_t, s2_fee, noise_rms=0) #nose added to s2_fee
-        s1t_daq, s1_daq = daq.DAQSignal(s1_t, s1_fee, noise_rms=0) #nose added to s1_fee
+        signal_t_daq, signal_daq = fee.DAQSignal(signal_t, signal_fee, noise_rms=0) 
+        s2t_daq, s2_daq = fee.DAQSignal(s2_t, s2_fee, noise_rms=0) #nose added to s2_fee
+        s1t_daq, s1_daq = fee.DAQSignal(s1_t, s1_fee, noise_rms=0) #nose added to s1_fee
         
         #Deconvolution
         signal_inv_daq = fee.InverseSignalDAQ(signal_t)  #inverse function
@@ -182,7 +182,8 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100):
    
         #signal_dec = MauDeconv(signal_t_daq, signal_daq, coef, n_sigma = 2)
         #s2_dec = MD.MauDeconv(s2t_daq, s2_daq, coef, n_sigma = 2)
-        signal_dec = DB.BLR(signal_t_daq, signal_daq, coef, n_sigma = 2, NOISE_ADC=0.5)
+        signal_dec = DB.BLR(signal_daq, coef, n_sigma = 1, 
+                            NOISE_ADC=FP.NOISE_FEE_rms/FP.voltsToAdc)
 
         DSGN['spe_I'] = Signal(t_spe, pulse_spe, threshold = 0.01*muA)
         DSGN['spe_V'] = Signal(t_spe, signal_spe,threshold = 0.01*mV)

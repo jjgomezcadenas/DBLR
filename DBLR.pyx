@@ -10,8 +10,8 @@ cdef float time_DAQ = FP.time_bin
 
 
 
-def BLR(double[:] signal_t_daq, double[:] signal_daq, double coef, 
-        int n_sigma = 3, double NOISE_ADC=0.5):
+def BLR(double[:] signal_daq, double coef, int n_sigma = 3, double NOISE_ADC=0.7, 
+        double thr1 = 0, double thr2 = 0, double thr3 = 0):
     """
     Deconvolution offline of the DAQ signal using a MAU
     moving window-average filter of a vector data
@@ -34,10 +34,17 @@ def BLR(double[:] signal_t_daq, double[:] signal_daq, double coef,
     
     signal_i = np.copy(signal_daq) #uses to update MAU while procesing signal
 
+
     cdef double thr = n_sigma*NOISE_ADC
-    cdef double thr_cmp = 2*thr  # to follow baseline tail
-    cdef double thr_tr = thr/5. # to conclude BLR when signal_deconv = signal_raw
+    if thr1 == 0:
+        thr = thr1
+
+    cdef double thr_tr = thr/2. # to conclude BLR when signal_deconv = signal_raw
+
+    if thr3 == 0:
+        thr_tr = thr3
     
+
     #MAU_WindowSize = 40 # provisional
     cdef int nm = MAU_WindowSize
     B_MAU       =   (1./nm)*np.ones(nm)
@@ -103,7 +110,7 @@ def BLR(double[:] signal_t_daq, double[:] signal_daq, double coef,
             
                 #if the recovered signal drops before trigger line 
                 #rec pulse is over!
-                if signal_r[k] < trigger_line:
+                if signal_r[k] < trigger_line + thr2:
                     wait_over = 1  #start tail compensation
                     pulse_on = 0   #recovered pulse is over
 
@@ -121,8 +128,8 @@ def BLR(double[:] signal_t_daq, double[:] signal_daq, double coef,
                         # raw signal still below recovered signal 
 
                         # is the recovered signal near offset?
-                        upper = offset + thr_cmp
-                        lower = offset - thr_cmp
+                        upper = offset + thr2
+                        lower = offset - thr2
 
                         if signal_r[k-1] > lower and signal_r[k-1] < upper:
                             # we are near offset, activate MAU. 
