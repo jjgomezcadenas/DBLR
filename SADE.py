@@ -56,7 +56,7 @@ CPLOT['plot_spe_fee'] = False
 CPLOT['plot_s1_mc'] = False
 CPLOT['plot_s2_mc'] = True
 CPLOT['plot_s1_pmt'] = False
-CPLOT['plot_s2_pmt'] = True
+CPLOT['plot_s2_pmt'] = False
 CPLOT['plot_signal_pmt'] = False
 CPLOT['plot_s1_fee'] = False
 CPLOT['plot_s2_fee'] = False
@@ -187,10 +187,8 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100, nsigma=2):
 
         # print "calling MauDeconv"
    
-        #signal_dec = MauDeconv(signal_t_daq, signal_daq, coef, n_sigma = 2)
-        #s2_dec = MD.MauDeconv(s2t_daq, s2_daq, coef, n_sigma = 2)
         signal_dec, eadc = DB.BLR(signal_daq, coef, n_sigma = nsigma, 
-                            NOISE_ADC=FP.NOISE_FEE_rms/FP.voltsToAdc)
+                            NOISE_ADC=FP.NOISE_FEE_rms/FP.voltsToAdc, plot=False)
 
         DSGN['spe_I'] = Signal('spe_I',t_spe, pulse_spe, threshold = 1e-6*muA)
         DSGN['spe_V'] = Signal('spe_V',t_spe, signal_spe,threshold = 1e-6*mV)
@@ -278,7 +276,7 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100, nsigma=2):
 if __name__ == '__main__':
 
     import cProfile
-    iset = 1  
+    iset = 3  
     frst_evt = 0
     lst_evt = 100
     path = "/Users/jjgomezcadenas/Documents/Development/NEXT/data/1ns/"

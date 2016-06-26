@@ -259,39 +259,39 @@ def SignalAnalysis(CSGN,CPLOT, saveHistos=False, filepath ="./"):
     if CPLOT['Histograms']:
 
         
-        bins = hbins(s1Area, nsigma=5, nbins=10)
+        bins = hbins(s1Area, nsigma=5, nbins=20)
         HSimple1(s1Area,bins,title="S1 area in PES (1ns)",xlabel = "pes",
             save=saveHistos,filename='s1Area.png', filepath=filepath)
 
-        bins = hbins(s2Area, nsigma=5, nbins=10)
+        bins = hbins(s2Area, nsigma=5, nbins=20)
         HSimple1(s2Area,bins,title="S2 area (PES)",xlabel = "pes",
             save=saveHistos,filename='s2Area.png', filepath=filepath)
 
-        bins = hbins(s2Length, nsigma=5, nbins=10)
+        bins = hbins(s2Length, nsigma=5, nbins=20)
         HSimple1(s2Length,bins,title="S2 length (mus)",xlabel = "mus",
             save=saveHistos,filename='s2Length.png', filepath=filepath)
 
-        bins = hbins(s2Peak, nsigma=5, nbins=10)
+        bins = hbins(s2Peak, nsigma=5, nbins=20)
         HSimple1(s2Peak,bins,title="S2 peak in PES (25 ns)",xlabel = "pes",
             save=saveHistos,filename='s2Peak.png', filepath=filepath)
 
-        bins = hbins(s2Avg, nsigma=5, nbins=10)
+        bins = hbins(s2Avg, nsigma=5, nbins=20)
         HSimple1(s2Avg,bins,title="S2 avg in PES (25 ns)",xlabel = "pes",
             save=saveHistos,filename='s2Avg.png', filepath=filepath)
 
-        bins = hbins(SignalRecPeak, nsigma=5, nbins=10)
+        bins = hbins(SignalRecPeak, nsigma=5, nbins=20)
         HSimple1(SignalRecPeak,bins,title="Signal R  peak in ADC (25 ns)",xlabel = "adc",
             save=saveHistos,filename='SignalRecPeak.png', filepath=filepath)
         
-        bins = hbins(SignalDAQPeak, nsigma=5, nbins=10)
+        bins = hbins(SignalDAQPeak, nsigma=5, nbins=20)
         HSimple1(SignalDAQPeak,bins,title="Signal DAQ  peak in ADC (25 ns)",xlabel = "adc",
             save=saveHistos,filename='SignalDAQPeak.png', filepath=filepath)
 
-        bins = hbins(SignalDAQOffMax, nsigma=5, nbins=10)
+        bins = hbins(SignalDAQOffMax, nsigma=5, nbins=20)
         HSimple1(SignalDAQOffMax,bins,title="Signal DAQ MAX ADC (25 ns)",xlabel = "adc",
             save=saveHistos,filename='SignalDAQOffMax.png', filepath=filepath)
 
-        bins = hbins(SignalDAQOffMin, nsigma=5, nbins=10)
+        bins = hbins(SignalDAQOffMin, nsigma=5, nbins=20)
         HSimple1(SignalDAQOffMin,bins,title="Signal DAQ MIN ADC (25 ns)",xlabel = "adc",
             save=saveHistos,filename='SignalDAQOffMin.png', filepath=filepath)
 

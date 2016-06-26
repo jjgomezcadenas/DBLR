@@ -3,6 +3,8 @@ Energy calculations
 """
 from PlotUtil import *
 import numpy as np
+from scipy import signal as SGN
+
 class EnergyVectors:
     """
     Stores the data needed for energy calculation
@@ -88,7 +90,7 @@ class SadeEnergy:
     """
     Energy calculation
     """   
-    def __init__(self, energyVectors):
+    def __init__(self, energyVectors, nmean=5, nsigma=5):
 
         self.q1ns = np.array(energyVectors.q1ns)
         self.q25ns = np.array(energyVectors.q25ns)
@@ -103,18 +105,21 @@ class SadeEnergy:
         self.epes25ns = np.array(energyVectors.epes25ns)
         self.epes1nsR = np.array(energyVectors.epes1nsR)
         self.epes25nsR = np.array(energyVectors.epes25nsR)
+        self.nmean = nmean
+        self.nsigma = nsigma
+
 
     def RecoveredEnergyInPES(self, ebin='25ns'):
         if ebin == '25ns':
-            return self.epes25ns
+            return MeanWOL(self.epes25ns,nmean=self.nmean, nsigma=self.nsigma)
         else:
-            return self.epes1ns
+            return MeanWOL(self.epes1ns,nmean=self.nmean, nsigma=self.nsigma)
 
     def RatioTrueToRecovered(self, ebin='25ns'):
         if ebin == '25ns':
-            return self.epes25nsR
+            return MeanWOL(self.epes25nsR,nmean=self.nmean, nsigma=self.nsigma) 
         else:
-            return self.epes1nsR
+            return MeanWOL(self.epes1nsR,nmean=self.nmean, nsigma=self.nsigma)
 
     def TrueEnergyInPES(self, ebin='25ns'):
         if ebin == '25ns':
@@ -155,51 +160,6 @@ class SadeEnergy:
                 np.average(self.epes25nsR),np.std(self.epes25nsR))
         return s
 
-def CutLowOutlayers(SGN, ninter=10, nsigma=5):
-    """
-    Given vector SGN this function computes the mean and rms
-    for ninter interactions, keeping only those elements x such that
-    mean - x < rms
-    Notice that the function is not simmetric, since one wants to cut
-    only lower outlayers (events with much lower energies due to radiation)
-    """
-
-    SR = np.zeros(len(SGN))
-    XSTD = np.zeros(ninter)
-    XMN = np.zeros(ninter)
-    XLEN = np.zeros(ninter)
-    SR[:] = SGN
-
-    for i in range(ninter):
-    
-        #print "SR =",SR
-        SR2 = []
-        XSTD[i] = np.std(SR)
-        XMN[i] = np.average(SR)
-        XLEN[i] = len(SR)
-
-        # print """
-        # iteration %d
-        # mean = %7.2f
-        # std = %7.2f
-        # length = %d
-        # """%(i,XMN[i],XSTD[i],XLEN[i])
-        j=0
-        for x in np.nditer(SR):
-            # print """
-            #     element %d
-            #     value = %7.2f
-            # """%(j,x)
-            if XMN[i] - x < nsigma*XSTD[i]:
-                SR2.append(x) 
-                j+=1
-                #print "pass"
-            
-
-        SR = np.array(SR2)
-        
-    return XMN, XSTD, XLEN
-
 
 def EnergyAnalysis(SE,CPLOT, saveHistos=False, filepath ="./"):
     """
@@ -210,10 +170,8 @@ def EnergyAnalysis(SE,CPLOT, saveHistos=False, filepath ="./"):
         Sade Energy = %s
     """%(SE)
 
-    irms = 10
     epes25ns = SE.RecoveredEnergyInPES(ebin='25ns')
-    xe, xstd, xlen = CutLowOutlayers(epes25ns, ninter=irms, nsigma=5)
-
+    
     qr25ns = 1000*SE.RatioTrueToRecovered(ebin='25ns')
     qr1ns = 1000*SE.RatioTrueToRecovered(ebin='1ns')
 
@@ -235,12 +193,6 @@ def EnergyAnalysis(SE,CPLOT, saveHistos=False, filepath ="./"):
         Reconstructed energy (in PES, 25 ns includes electronics noise, recovery)
         mean = %7.2f std = %7.2f, sigma_E/E (FWHM) = %7.2f
 
-        Cut low outlayers after %d iterations
-        --------------------------------------
-
-        energy vector length = %d
-        Energy in PES (25 ns) = %7.2f std = %7.2f, sigma_E/E (FWHM) = %7.2f
-
         Difference Ratio True to Recovered (25 ns) x 1000 = %7.2f
         Difference Ratio True to Recovered (1 ns) x 1000 = %7.2f
 
@@ -252,22 +204,21 @@ def EnergyAnalysis(SE,CPLOT, saveHistos=False, filepath ="./"):
          differenceRatio(np.average(etrue1ns),np.average(etrue25ns)),
          np.average(epes25ns), np.std(epes25ns),
          ResFWHM(np.std(epes25ns),np.average(epes25ns)),
-         irms, xlen[-1], np.average(xe), np.average(xstd),
-         ResFWHM(np.average(xstd),np.average(xe)),np.average(qr25ns),
+         np.average(qr25ns),
          np.average(qr1ns)
          )
 
     if CPLOT['EnergyHistograms'] == True:
 
-        bins = hbins(etrue25ns, nsigma=5, nbins=10)
+        bins = hbins(etrue25ns, nsigma=5, nbins=20)
         HSimple1(etrue25ns,bins,title="True energy in PES (25 ns)",xlabel = "pes",
             save=saveHistos,filename='etrue25ns.png', filepath=filepath)
 
-        bins = hbins(epes25ns, nsigma=5, nbins=10)
+        bins = hbins(epes25ns, nsigma=5, nbins=20)
         HSimple1(epes25ns,bins,title="Recovered energy in PES (25 ns)",xlabel = "pes",
             save=saveHistos,filename='epes25ns.png', filepath=filepath)
 
-        bins = hbins(qr25ns, nsigma=5, nbins=10)
+        bins = hbins(qr25ns, nsigma=5, nbins=20)
         HSimple1(qr25ns,bins,title="Rec ratio (25 ns)",xlabel = "",
             save=saveHistos,filename='qr25ns.png', filepath=filepath)
 

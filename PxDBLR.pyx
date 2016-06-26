@@ -172,16 +172,16 @@ def BLR(double[:] signal_daq, double coef, int n_sigma = 3, double NOISE_ADC=0.7
         print "Baseline = %7.1f, energy = %7.1f "%(BASELINE, energy)
 
         ax1 = plt.subplot(3,1,1)
-        ax1.set_xlim([1500, 3500])
+        ax1.set_xlim([0, 3500])
         plt.plot(pulse_f)
 
         ax2 = plt.subplot(3,1,2)
-        ax2.set_xlim([1500, 3500])
+        ax2.set_xlim([0, 3500])
         plt.plot(signal_daq)
 
         ax3 = plt.subplot(3,1,3)
         plt.plot(signal_r-BASELINE)
-        ax3.set_xlim([1500, 3500])
+        ax3.set_xlim([0, 3500])
         plt.show()
                         
     return  signal_r, energy
