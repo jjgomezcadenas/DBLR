@@ -31,3 +31,10 @@ def inRange(x,xmin,xmax):
 	else:
 		return False
 
+def differenceRatio(x1,x2):
+	return 2*abs(x1-x2)/(x1+x2)
+
+def ResFWHM(sigma,E):
+	return 100*2.35*sigma/E
+
+

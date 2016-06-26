@@ -28,7 +28,7 @@ if __name__ == '__main__':
     #          "electrons.2615keV.1ns.15bar",
     #          "electrons.511keV.1ns.15bar"]
 
-    dataset = ["bb0nu.1ns.15bar"]
+    dataset = ["Kr83.1ns.15bar"]
 
 
     root_file_name = []

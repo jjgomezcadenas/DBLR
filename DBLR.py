@@ -1,17 +1,18 @@
 import numpy as np
 from scipy import signal as SGN
 import FEParam as FP
+import matplotlib.pyplot as plt
 
 import sys
 from system_of_units import *
 
-cdef int MAU_WindowSize = FP.MAU_WindowSize
-cdef float time_DAQ = FP.time_bin
+MAU_WindowSize = FP.MAU_WindowSize
+time_DAQ = FP.time_bin
 
 
 
-def BLR(double[:] signal_daq, double coef, int n_sigma = 3, double NOISE_ADC=0.7, 
-        double thr1 = 0, double thr2 = 0, double thr3 = 0):
+def BLR(signal_daq, coef, n_sigma = 3, NOISE_ADC=0.7, 
+        thr1 = 0, thr2 = 0, thr3 = 0, plot = False):
     """
     Deconvolution offline of the DAQ signal using a MAU
     moving window-average filter of a vector data
@@ -27,26 +28,27 @@ def BLR(double[:] signal_daq, double coef, int n_sigma = 3, double NOISE_ADC=0.7
     and so on
     """
 
-    cdef int len_signal_daq = len(signal_daq)
+    len_signal_daq = len(signal_daq)
     MAU = np.zeros(len_signal_daq, dtype=np.double)
     acum = np.zeros(len_signal_daq, dtype=np.double)
     signal_r = np.zeros(len_signal_daq, dtype=np.double)
+    pulse_f = np.zeros(len(signal_daq), dtype=np.double)
     
     signal_i = np.copy(signal_daq) #uses to update MAU while procesing signal
 
 
-    cdef double thr = n_sigma*NOISE_ADC
-    if thr1 == 0:
+    thr = n_sigma*NOISE_ADC
+    if thr1 != 0:
         thr = thr1
 
-    cdef double thr_tr = thr/2. # to conclude BLR when signal_deconv = signal_raw
+    thr_tr = thr/5. # to conclude BLR when signal_deconv = signal_raw
 
-    if thr3 == 0:
+    if thr3 != 0:
         thr_tr = thr3
     
 
     #MAU_WindowSize = 40 # provisional
-    cdef int nm = MAU_WindowSize
+    nm = MAU_WindowSize
     B_MAU       =   (1./nm)*np.ones(nm)
 
 #   MAU averages the signal in the initial tranch 
@@ -54,22 +56,24 @@ def BLR(double[:] signal_daq, double coef, int n_sigma = 3, double NOISE_ADC=0.7
     
     MAU[0:nm] = SGN.lfilter(B_MAU,1, signal_daq[0:nm])
     acum[nm] =  MAU[nm]
+    BASELINE = MAU[nm-1]
 
 #----------
 
 # While MAU inits BLR is switched off, thus signal_r = signal_daq 
 
     signal_r[0:nm] = signal_daq[0:nm] 
-    cdef int pulse_on=0
-    cdef int wait_over=0
-    cdef double offset = 0
+    pulse_on=0
+    wait_over=0
+    offset = 0
 
     # MAU has computed the offset using nm samples
     # now loop until the end of DAQ window
-    cdef int k
+
     for k in range(nm,len_signal_daq): 
 
         trigger_line = MAU[k-1] + thr
+        pulse_f[k] = pulse_on 
 
         # condition: raw signal raises above trigger line and 
         # we are not in the tail
@@ -128,8 +132,8 @@ def BLR(double[:] signal_daq, double coef, int n_sigma = 3, double NOISE_ADC=0.7
                         # raw signal still below recovered signal 
 
                         # is the recovered signal near offset?
-                        upper = offset + thr2
-                        lower = offset - thr2
+                        upper = offset + (thr_tr + thr2)
+                        lower = offset - (thr_tr + thr2)
 
                         if signal_r[k-1] > lower and signal_r[k-1] < upper:
                             # we are near offset, activate MAU. 
@@ -162,22 +166,40 @@ def BLR(double[:] signal_daq, double coef, int n_sigma = 3, double NOISE_ADC=0.7
                     signal_r[k] = signal_daq[k]
                     signal_i[k] = signal_r[k]
                     MAU[k] = np.sum(signal_i[k-nm:k])/nm
-                        
-    return  signal_r
 
-def FindSignalAboveThr(double[:] signal_t, double[:] signal, double threshold = 0.):
+    energy = np.dot(pulse_f,(signal_r-BASELINE))*FP.time_DAQ
+
+    if plot:
+        print "Baseline = %7.1f, energy = %7.1f "%(BASELINE, energy)
+
+        ax1 = plt.subplot(3,1,1)
+        ax1.set_xlim([1500, 3500])
+        plt.plot(pulse_f)
+
+        ax2 = plt.subplot(3,1,2)
+        ax2.set_xlim([1500, 3500])
+        plt.plot(signal_daq)
+
+        ax3 = plt.subplot(3,1,3)
+        plt.plot(signal_r-BASELINE)
+        ax3.set_xlim([1500, 3500])
+        plt.show()
+                       
+    return  signal_r, energy
+
+def FindSignalAboveThr(signal_t, signal, threshold = 0.):
     """
     Finds positive signals above threshold. 
     """    
    
-    cdef double pulse_on = 0
-    cdef int len_signal = len(signal)
-    cdef int k
+    pulse_on = 0
+    len_signal = len(signal)
+    
 
     pulse_f = np.zeros(len_signal, dtype=np.double)
     t_f = np.zeros(len_signal, dtype=np.double)
 
-    cdef int i=0
+    i=0
     for k in range(len_signal): 
 
         if signal[k] > threshold and pulse_on == 0:

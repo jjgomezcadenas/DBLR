@@ -2,10 +2,10 @@
 """
 Module with classes and utilities for signal manipulation in SADE
 """
+from CParam import *
 from PlotUtil import *
 import FEE as FE
 import FEParam as FP
-import DBLR as DB
 
 
 class SignalDef:
@@ -61,7 +61,7 @@ class Signal:
     """
     Characterizes the signals
     """   
-    def __init__(self, time, pulse, stype='NDAC', threshold = 0, downscale=False):
+    def __init__(self, name, time, pulse, stype='NDAC', threshold = 0, downscale=False):
         """
         defines a signal 
         stype is the signal type: 
@@ -75,6 +75,7 @@ class Signal:
             """%(len(time),len(pulse))
             sys.exit()
         
+        self.name = name
         self.stype = stype
         self.downscale = downscale
         
@@ -156,45 +157,24 @@ class Signal:
 
     def __str__(self):    
         s= """
-            Signal:
+            Signal %s:
 
             length = %7.2f ns 
-            area = %7.2f pes x ns
-            peak (maximum) = %7.2f pes
-            minimum = %7.2f pes
-            avg = %7.2f pes
+            area = %7.2f 
+            peak (maximum) = %7.2f 
+            minimum = %7.2f 
+            avg = %7.2f 
             
-        """%(self.Length(), self.Area(), 
+        """%(self.name, self.Length(), self.Area(), 
             self.Peak(), self.Minimum(), self.Avg()
             )
         return s
 
 
-def ComputeAreas(DSGN):
-    """
-    Compute the area of the recovered (deconvoluted) signal and compares it
-    with the original signal (after PMT in ADC counts before FEE)
-    """
-
-    Q_i = DSGN['signal_PMT_ADC'].Area() #s2 out of PMT in adc counts
-
-    # recovered signal, downscaled
-    Q_r =  DSGN['signal_R'].Area() 
-
-    print """
-        Deconvoluted SIGNAL
-        Q (input pulse) = %7.1f
-        Q (recovered pulse) = %7.1f 
-        rms = %7.2g
-
-      """%(Q_i, Q_r, abs(Q_i -Q_r)/Q_i)
-    return abs(Q_i -Q_r)/Q_i
-
 def SignalAnalysis(CSGN,CPLOT, saveHistos=False, filepath ="./"):
     """
     Histogram main properties
     """
-
     s1Area = np.zeros(len(CSGN))
     s2Area = np.zeros(len(CSGN))
     s2Length = np.zeros(len(CSGN))
@@ -206,12 +186,9 @@ def SignalAnalysis(CSGN,CPLOT, saveHistos=False, filepath ="./"):
 
     SignalRecPeak = np.zeros(len(CSGN))
     SignalRecArea = np.zeros(len(CSGN))
-    
+       
     SignalDAQPeak = np.zeros(len(CSGN))
-
     SignalDAQArea = np.zeros(len(CSGN))
-
-    DeltaQ = np.zeros(len(CSGN))
 
     SignalDAQOffMax = np.zeros(len(CSGN))
     SignalDAQOffMin = np.zeros(len(CSGN))
@@ -232,16 +209,14 @@ def SignalAnalysis(CSGN,CPLOT, saveHistos=False, filepath ="./"):
         SignalDAQPeak[i] = DSGN['signal_DAQ'].Peak()
         SignalDAQArea[i] = DSGN['signal_DAQ'].Area()
 
-        SignalRecPeak[i] = DSGN['signal_R'].Peak()
-        SignalRecArea[i] = DSGN['signal_R'].Area()
+        SignalRecPeak[i] = DSGN['signal_R2'].Peak()
+        SignalRecArea[i] = DSGN['signal_R2'].Area()
         
-        DeltaQ[i] = 1000.*ComputeAreas(DSGN)
-
         SignalDAQOffMax[i] = DSGN['signal_DAQ_off'].Peak()
         SignalDAQOffMin[i] = DSGN['signal_DAQ_off'].Minimum()
 
     
-        i+=1
+        i+=1 
     
     print """
 
@@ -249,72 +224,78 @@ def SignalAnalysis(CSGN,CPLOT, saveHistos=False, filepath ="./"):
     peak 25 ns = %7.2f adc counts
     area = %7.2g adc counts
 
-    S1 
-    area (pes) = %7.2f
+    S1
+    area  = %7.2f pes
 
     S2 
-    peak  = %7.2f
-    average  = %7.2f
-    area (pes) = %7.2f
-    area rms = %7.2g pes
-    100 x area_rms/area = %7.2f
-    Length (pes) = %7.2f mus
+    peak  = %7.2f pes
+    average heigth  = %7.2f pes
+    area  = %7.2f pes
+    Length  = %7.2f mus
 
-    Signal DAQ
-    peak 25 ns = %7.2f adc counts
-    area = %7.2g adc counts
-    
-    Signal Recovered
-    peak 25 ns = %7.2f adc counts
-    area = %7.2g adc counts
-    
-    Delta Q (rms) x 1000 = %7.2g
+    DAQ 
+    peak  = %7.2f adc
+    area  = %7.2f adc
 
+    DAQ offset
+    maximum  = %7.2f adc
+    minimum  = %7.2f adc
+
+    REC
+    peak  = %7.2f adc
+    area  = %7.2f adc
+
+    
     """%(np.average(SPEAdcPeak),np.average(SPEAdcArea),
         np.average(s1Area),
         np.average(s2Peak),np.average(s2Avg),np.average(s2Area),
-        np.std(s2Area),100*np.std(s2Area)/np.average(s2Area),
         np.average(s2Length),
         np.average(SignalDAQPeak), np.average(SignalDAQArea),
-        np.average(SignalRecPeak),np.average(SignalRecArea),
-        np.average(DeltaQ))
+        np.average(SignalDAQOffMax),np.average(SignalDAQOffMin),
+        np.average(SignalRecPeak),np.average(SignalRecArea)
+        )
+
 
     if CPLOT['Histograms']:
 
-        HSimple1(s1Area,20,title="S1 area in PES (1ns)",xlabel = "pes",
+        
+        bins = hbins(s1Area, nsigma=5, nbins=10)
+        HSimple1(s1Area,bins,title="S1 area in PES (1ns)",xlabel = "pes",
             save=saveHistos,filename='s1Area.png', filepath=filepath)
-        HSimple1(s2Area,20,title="S2 area (PES)",xlabel = "pes",
+
+        bins = hbins(s2Area, nsigma=5, nbins=10)
+        HSimple1(s2Area,bins,title="S2 area (PES)",xlabel = "pes",
             save=saveHistos,filename='s2Area.png', filepath=filepath)
-        HSimple1(s2Length,20,title="S2 length (mus)",xlabel = "mus",
+
+        bins = hbins(s2Length, nsigma=5, nbins=10)
+        HSimple1(s2Length,bins,title="S2 length (mus)",xlabel = "mus",
             save=saveHistos,filename='s2Length.png', filepath=filepath)
-        HSimple1(s2Peak,20,title="S2 peak in PES (25 ns)",xlabel = "pes",
+
+        bins = hbins(s2Peak, nsigma=5, nbins=10)
+        HSimple1(s2Peak,bins,title="S2 peak in PES (25 ns)",xlabel = "pes",
             save=saveHistos,filename='s2Peak.png', filepath=filepath)
-        HSimple1(s2Avg,20,title="S2 avg in PES (25 ns)",xlabel = "pes",
+
+        bins = hbins(s2Avg, nsigma=5, nbins=10)
+        HSimple1(s2Avg,bins,title="S2 avg in PES (25 ns)",xlabel = "pes",
             save=saveHistos,filename='s2Avg.png', filepath=filepath)
 
-        HSimple1(SignalRecPeak,20,title="Signal R  peak in ADC (25 ns)",xlabel = "adc",
+        bins = hbins(SignalRecPeak, nsigma=5, nbins=10)
+        HSimple1(SignalRecPeak,bins,title="Signal R  peak in ADC (25 ns)",xlabel = "adc",
             save=saveHistos,filename='SignalRecPeak.png', filepath=filepath)
-        HSimple1(SignalRecArea,20,title="Signal R area in ADC (25 ns)",xlabel = "adc",
-            save=saveHistos,filename='SignalRecArea.png', filepath=filepath)
-
-        HSimple1(SignalDAQPeak,20,title="Signal DAQ  peak in ADC (25 ns)",xlabel = "adc",
+        
+        bins = hbins(SignalDAQPeak, nsigma=5, nbins=10)
+        HSimple1(SignalDAQPeak,bins,title="Signal DAQ  peak in ADC (25 ns)",xlabel = "adc",
             save=saveHistos,filename='SignalDAQPeak.png', filepath=filepath)
-        HSimple1(SignalDAQArea,20,title="Signal DAQ area in ADC (25 ns)",xlabel = "adc",
-            save=saveHistos,filename='SignalDAQArea.png', filepath=filepath)
 
-        HSimple1(SignalDAQOffMax,20,title="Signal DAQ MAX ADC (25 ns)",xlabel = "adc",
+        bins = hbins(SignalDAQOffMax, nsigma=5, nbins=10)
+        HSimple1(SignalDAQOffMax,bins,title="Signal DAQ MAX ADC (25 ns)",xlabel = "adc",
             save=saveHistos,filename='SignalDAQOffMax.png', filepath=filepath)
-        HSimple1(SignalDAQOffMin,20,title="Signal DAQ MIN ADC (25 ns)",xlabel = "adc",
+
+        bins = hbins(SignalDAQOffMin, nsigma=5, nbins=10)
+        HSimple1(SignalDAQOffMin,bins,title="Signal DAQ MIN ADC (25 ns)",xlabel = "adc",
             save=saveHistos,filename='SignalDAQOffMin.png', filepath=filepath)
 
-        HSimple1(SignalRecPeak,20,title="Signal R  peak in ADC (25 ns)",xlabel = "adc",
-            save=saveHistos,filename='SignalRecPeak.png', filepath=filepath)
-        HSimple1(SignalRecArea,20,title="Signal R area in ADC (25 ns)",xlabel = "adc",
-            save=saveHistos,filename='SignalRecArea.png', filepath=filepath)
         
-        HSimple1(DeltaQ,20,title=" rms x 1000 rec",xlabel = "DQ",
-            save=saveHistos,filename='DeltaQ.png', filepath=filepath)
-
         #plt.show()
 def PlotSignals(DSGN,CPLOT):
     """

@@ -3,9 +3,11 @@ SADE: Signal Analysis and DEconvolution
 JJGC June 2016
 """
 
+from CParam import *
+
 from PlotUtil import *
 from SadeSignals import *
-import DBLR as DB
+from SadeEnergy import *
 
 import numpy as np
 import os
@@ -36,10 +38,14 @@ dataset_s2l =600500
 dataset_s2r =1100000
 
 saveHistos = True
-CPLOT={}
-CPLOT['Plots'] = True
-CPLOT['Areas'] = True
-CPLOT['Histograms'] = False
+signal_analysis = True
+energy_analysis = True
+print_energy_vectors = False
+
+CPLOT = {}
+CPLOT['Plots'] = False
+CPLOT['Histograms'] = True
+CPLOT['EnergyHistograms'] = True
 
 CPLOT['plot_I'] = False
 CPLOT['plot_V'] = True
@@ -47,10 +53,10 @@ CPLOT['plot_ADC'] = True
 CPLOT['plot_PE'] = True
 CPLOT['plot_spe'] = False
 CPLOT['plot_spe_fee'] = False
-CPLOT['plot_s1_mc'] = True
+CPLOT['plot_s1_mc'] = False
 CPLOT['plot_s2_mc'] = True
 CPLOT['plot_s1_pmt'] = False
-CPLOT['plot_s2_pmt'] = False
+CPLOT['plot_s2_pmt'] = True
 CPLOT['plot_signal_pmt'] = False
 CPLOT['plot_s1_fee'] = False
 CPLOT['plot_s2_fee'] = False
@@ -58,7 +64,7 @@ CPLOT['plot_signal_fee'] = True
 CPLOT['plot_R'] = True
 CPLOT['plot_signal_inv_daq'] = False
 
-def SADE(path,histoPath,iset,nmin=0,nmax=100):
+def SADE(path,histoPath,iset,nmin=0,nmax=100, nsigma=2):
     
     ds = SignalDef(dataset_name[iset], dataset_s1l, dataset_s1r, 
                    dataset_s2l, dataset_s2r)
@@ -111,6 +117,7 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100):
     i=0
     
     CSGN = [] #container of signals 
+    EV = EnergyVectors()
 
     for array in h5file.walk_nodes("/", "CArray"):
         i+=1
@@ -182,77 +189,103 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100):
    
         #signal_dec = MauDeconv(signal_t_daq, signal_daq, coef, n_sigma = 2)
         #s2_dec = MD.MauDeconv(s2t_daq, s2_daq, coef, n_sigma = 2)
-        signal_dec = DB.BLR(signal_daq, coef, n_sigma = 1, 
+        signal_dec, eadc = DB.BLR(signal_daq, coef, n_sigma = nsigma, 
                             NOISE_ADC=FP.NOISE_FEE_rms/FP.voltsToAdc)
 
-        DSGN['spe_I'] = Signal(t_spe, pulse_spe, threshold = 0.01*muA)
-        DSGN['spe_V'] = Signal(t_spe, signal_spe,threshold = 0.01*mV)
-        DSGN['spe_ADC'] = Signal(t_spe, signal_spe/FP.voltsToAdc, threshold = 0.01*adc)
+        DSGN['spe_I'] = Signal('spe_I',t_spe, pulse_spe, threshold = 1e-6*muA)
+        DSGN['spe_V'] = Signal('spe_V',t_spe, signal_spe,threshold = 1e-6*mV)
+        DSGN['spe_ADC'] = Signal('spe_ADC',t_spe, signal_spe/FP.voltsToAdc, 
+                                 threshold = 1e-6*adc)
 
-        DSGN['spe_FEE'] = Signal(t_spe, spe_fee, threshold = 0)
-        DSGN['spe_FEE_NN'] = Signal(t_spe, spe_fee_no_noise, threshold = 0)
-        DSGN['spe_DAQ'] = Signal(spe_t_daq, spe_DAQ, threshold = 0,  stype='DAC')
+        DSGN['spe_FEE'] = Signal('spe_FEE',t_spe, spe_fee, threshold = 0)
+        DSGN['spe_FEE_NN'] = Signal('spe_FEE_NN',t_spe, spe_fee_no_noise, threshold = 0)
+        DSGN['spe_DAQ'] = Signal('spe_DAQ', spe_t_daq, spe_DAQ, threshold = 0,  stype='DAC')
 
-        DSGN['s2_MC'] = Signal(s2_t, s2_histo_PE,threshold = 0.01*pes, downscale=True)
-        DSGN['s1_MC'] = Signal(s1_t, s1_histo_PE, threshold = 0.001*pes, downscale=True)
+        DSGN['s2_MC'] = Signal('s2_MC', s2_t, s2_histo_PE,threshold = 1e-6*pes, 
+                                downscale=True)
+        DSGN['s2_MC_1ns'] = Signal('s2_MC_1ns',s2_t, s2_histo_PE,threshold = 1e-6*pes, 
+                                    downscale=False)
+        DSGN['s1_MC'] = Signal('s1_MC',s1_t, s1_histo_PE, threshold = 1e-6*pes, 
+                                downscale=True)
                                
-        DSGN['s2_PMT'] = Signal(s2_t, s2_PE,threshold = 0.01*muA, downscale=True)
-        DSGN['s1_PMT'] = Signal(s1_t, s1_PE, threshold = 0.01*muA, downscale=True)
-        DSGN['s2_PMT_V'] = Signal(s2_t, fee.VSignal(s2_PE),threshold = 0.01*mV, downscale=True)
-        DSGN['s1_PMT_V'] = Signal(s1_t, fee.VSignal(s1_PE), threshold = 0.01*mV, downscale=True)
+        DSGN['s2_PMT'] = Signal('s2_PMT', s2_t, s2_PE,threshold = 1e-6*muA, 
+                                 downscale=True)
+        DSGN['s1_PMT'] = Signal('s1_PMT', s1_t, s1_PE, threshold = 1e-6*muA, 
+                                 downscale=True)
+        DSGN['s2_PMT_V'] = Signal('s2_PMT_V', s2_t, fee.VSignal(s2_PE),threshold = 1e-6*mV, 
+                                 downscale=True)
+        DSGN['s1_PMT_V'] = Signal('s1_PMT_V',s1_t, fee.VSignal(s1_PE), threshold = 1e-6*mV, 
+                                 downscale=True)
 
-        DSGN['signal_PMT_ADC'] = Signal(signal_t, fee.VSignal(signal_PE)/FP.voltsToAdc,
-                                    threshold = 0.01*adc, downscale=True)
+        DSGN['signal_PMT_ADC'] = Signal('signal_PMT_ADC', signal_t, 
+                                        fee.VSignal(signal_PE)/FP.voltsToAdc,
+                                        threshold = 0, downscale=True)
 
-        DSGN['s2_PMT_ADC'] = Signal(s2_t, fee.VSignal(s2_PE)/FP.voltsToAdc,
-                                    threshold = 0.01*adc, downscale=True)
-        DSGN['s1_PMT_ADC'] = Signal(s1_t, fee.VSignal(s1_PE)/FP.voltsToAdc, 
-                                    threshold = 0.01*adc,downscale=False)
+        DSGN['s2_PMT_ADC'] = Signal('s2_PMT_ADC', s2_t, fee.VSignal(s2_PE)/FP.voltsToAdc,
+                                    threshold = 1e-6*adc, downscale=True)
+        DSGN['s2_PMT_ADC_1ns'] = Signal('s2_PMT_ADC_1ns', s2_t, 
+                                    fee.VSignal(s2_PE)/FP.voltsToAdc,
+                                    threshold = 1e-6*adc, downscale=False)
+        DSGN['s1_PMT_ADC'] = Signal('s1_PMT_ADC', s1_t, 
+                                    fee.VSignal(s1_PE)/FP.voltsToAdc, 
+                                    threshold = 1e-6*adc,downscale=False)
 
-        DSGN['s2_FEE'] = Signal(s2_t, s2_fee,threshold = 0, downscale=False)
-        DSGN['s1_FEE_NN'] = Signal(s1_t, s1_fee_no_noise,threshold = 0, downscale=False)
-        DSGN['s1_FEE'] = Signal(s1_t, s1_fee, threshold = 0, downscale=False)
+        DSGN['s2_FEE'] = Signal('s2_FEE', s2_t, s2_fee,threshold = 0, downscale=False)
+        DSGN['s1_FEE_NN'] = Signal('s1_FEE_NN', s1_t, s1_fee_no_noise,threshold = 0, 
+                                    downscale=False)
+        DSGN['s1_FEE'] = Signal('s1_FEE', s1_t, s1_fee, threshold = 0, downscale=False)
                                     
 
-        DSGN['signal_DAQ_off'] = Signal(signal_t_daq, signal_daq -FP.offset, 
+        DSGN['signal_DAQ_off'] = Signal('signal_DAQ_off', signal_t_daq, signal_daq -FP.offset, 
                                     threshold = 0, downscale=False)
 
-        DSGN['s2_DAQ'] = Signal(s2t_daq, s2_daq, threshold = 0, downscale=False)
-        DSGN['s1_DAQ'] = Signal(s1t_daq, s1_daq, 
+        DSGN['s2_DAQ'] = Signal('s2_DAQ', s2t_daq, s2_daq, threshold = 0, downscale=False)
+        DSGN['s1_DAQ'] = Signal('s1_DAQ', s1t_daq, s1_daq, 
                                 threshold = 0, stype='DAC', downscale=False)
 
-        DSGN['signal_DAQ'] = Signal(signal_t_daq, signal_daq, 
+        DSGN['signal_DAQ'] = Signal('signal_DAQ', signal_t_daq, signal_daq, 
                                 threshold = 0, stype='DAC', downscale=False)
-        DSGN['signal_R'] = Signal(signal_t_daq, signal_dec, 
+        DSGN['signal_R'] = Signal('signal_R', signal_t_daq, signal_dec, 
                                 threshold = 0, stype='DAC', downscale=False)
+        DSGN['signal_R2'] = Signal('signal_R2',  signal_t_daq, signal_dec, 
+                                threshold = 1e-6*adc, stype='DAC', downscale=False)
 
+
+        EV.AddVectors(DSGN['s2_MC_1ns'].Area(),DSGN['s2_MC'].Area(),
+                      DSGN['s2_PMT_ADC_1ns'].Area(), DSGN['s2_PMT_ADC'].Area(),
+                      eadc)
+
+        if print_energy_vectors == True:
+            print "energy vectors = %s"%(EV)
 
         if CPLOT['Plots']:
             PlotSignals(DSGN,CPLOT)
-
-        if CPLOT['Areas']:
-            ComputeAreas(DSGN)
-        
+            
         CSGN.append(DSGN)
-        
 
-    SignalAnalysis(CSGN,CPLOT,saveHistos, filepath =hpath)
+    SE = SadeEnergy(EV)
+        
+    if signal_analysis == True:
+        SignalAnalysis(CSGN,CPLOT,saveHistos, filepath =hpath)
+
+    if energy_analysis == True:
+        EnergyAnalysis(SE,CPLOT,saveHistos, filepath =hpath)
 
     if saveHistos == False or CPLOT['Histograms'] == False:
         plt.show()
     
 
-
 if __name__ == '__main__':
 
     import cProfile
-    iset = 0  
+    iset = 1  
     frst_evt = 0
-    lst_evt = 10
+    lst_evt = 100
     path = "/Users/jjgomezcadenas/Documents/Development/NEXT/data/1ns/"
     histoPath='/Users/jjgomezcadenas/Documents/Development/NEXT/WORK/EP/Signals/'
-    SADE(path,histoPath,iset,nmin=frst_evt,nmax=lst_evt)
-    #cProfile.run('SADE(iset,nmax=maxevt)', sort='time')
+    SADE(path,histoPath,iset,nmin=frst_evt,nmax=lst_evt, nsigma=1.0)
+    # cProfile.run('SADE(path,histoPath,iset,nmin=frst_evt,nmax=lst_evt, nsigma=1.0)', 
+    #     sort='time')
 
         
      

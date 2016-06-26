@@ -7,10 +7,15 @@ import numpy as np
 import os
 import sys
 
-
+def hbins(x, nsigma=5, nbins=10):
+  xmin =np.average(x) - nsigma*np.std(x)
+  xmax =np.average(x) + nsigma*np.std(x)
+  bins = np.linspace(xmin, xmax, nbins)
+  return bins
+  
 def HSimple1(x,nbins,title='hsimple',xlabel = '', ylabel = 'Frequency', 
              save=False,filename='hsimple.png', filepath='./'):
-  plt.hist(x, nbins, histtype='bar', rwidth=0.6)
+  plt.hist(x, nbins, histtype='bar', alpha=0.75)
   plt.title(title)
   plt.xlabel(xlabel)
   plt.ylabel(ylabel)
