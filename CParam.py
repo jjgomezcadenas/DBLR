@@ -19,7 +19,7 @@ dataset_s1r =600500
 dataset_s2l =600500
 dataset_s2r =1100000
 
-iset = 3  
+iset = 6  
 frst_evt = 0
 lst_evt = 100
 n_sigma=1
@@ -36,6 +36,7 @@ CPAR['Plots'] = False
 CPAR['Histograms'] = True
 CPAR['EnergyHistograms'] = True
 
+CPAR['plot_BLR'] = False
 CPAR['plot_I'] = False
 CPAR['plot_V'] = True
 CPAR['plot_ADC'] = True
