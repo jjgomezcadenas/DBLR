@@ -5,9 +5,15 @@ JJGC June 2016
 
 from CParam import *
 
+if cython_dblr == False:
+    import DBLR as DB
+else:
+    import PxDBLR as DB
+
 from PlotUtil import *
 from SadeSignals import *
 from SadeEnergy import *
+from SadeAnalysis import *
 
 import numpy as np
 import os
@@ -20,49 +26,8 @@ import FEE as FE
 from scipy import signal as SGN
 import tables as tb
 
-len_signal_max = 1200000
 
 
-dataset_name = ["Kr83.z5cm.1ns","Kr83.z10cm.1ns","Kr83.z15cm.1ns",
-                "electrons.511keV.1ns","electrons.1275keV.1ns",
-                "electrons.2615keV.1ns",
-                "bb0nu.1ns",
-                "Kr83.1ns.15bar",
-                "electrons.1275keV.1ns.15bar",
-                "electrons.2615keV.1ns.15bar","electrons.511keV.1ns.15bar",
-                "bb0nu.1ns.15bar"]
-
-dataset_s1l = 599000
-dataset_s1r =600500 
-dataset_s2l =600500
-dataset_s2r =1100000
-
-saveHistos = True
-signal_analysis = True
-energy_analysis = True
-print_energy_vectors = False
-
-CPLOT = {}
-CPLOT['Plots'] = False
-CPLOT['Histograms'] = True
-CPLOT['EnergyHistograms'] = True
-
-CPLOT['plot_I'] = False
-CPLOT['plot_V'] = True
-CPLOT['plot_ADC'] = True
-CPLOT['plot_PE'] = True
-CPLOT['plot_spe'] = False
-CPLOT['plot_spe_fee'] = False
-CPLOT['plot_s1_mc'] = False
-CPLOT['plot_s2_mc'] = True
-CPLOT['plot_s1_pmt'] = False
-CPLOT['plot_s2_pmt'] = False
-CPLOT['plot_signal_pmt'] = False
-CPLOT['plot_s1_fee'] = False
-CPLOT['plot_s2_fee'] = False
-CPLOT['plot_signal_fee'] = True
-CPLOT['plot_R'] = True
-CPLOT['plot_signal_inv_daq'] = False
 
 def SADE(path,histoPath,iset,nmin=0,nmax=100, nsigma=2):
     
@@ -134,7 +99,7 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100, nsigma=2):
         if i <= nmin:
             continue
         
-        if CPLOT['Plots'] and CPLOT['plot_PE']:
+        if CPAR['Plots'] and CPAR['plot_PE']:
             PlotPE(histo_t,cnt,len_signal_max,ds.s1_l,ds.s1_r,ds.s2_l,ds.s2_r)
 
         #s2 and s1 histograms from True MC (average of PMTs, thus fractions allowed) in PES 
@@ -178,7 +143,7 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100, nsigma=2):
         coef = signal_inv_daq[10]  #accumulator coefficient
         #print "inverse coef fee: = %7.2g "%coef
 
-        if CPLOT['plot_signal_inv_daq'] and CPLOT['Plots'] :   
+        if CPAR['plot_signal_inv_daq'] and CPAR['Plots'] :   
             plot_signal(signal_t/ns,signal_inv_daq,
                 title = 'Inverse DAQ', 
                 signal_start=0*ns, signal_end=10*ns, 
@@ -253,35 +218,31 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100, nsigma=2):
                       DSGN['s2_PMT_ADC_1ns'].Area(), DSGN['s2_PMT_ADC'].Area(),
                       eadc)
 
-        if print_energy_vectors == True:
+        if CPAR['print_energy_vectors'] == True:
             print "energy vectors = %s"%(EV)
 
-        if CPLOT['Plots']:
-            PlotSignals(DSGN,CPLOT)
+        if CPAR['Plots']:
+            PlotSignals(DSGN,CPAR)
             
         CSGN.append(DSGN)
 
     SE = SadeEnergy(EV)
         
-    if signal_analysis == True:
-        SignalAnalysis(CSGN,CPLOT,saveHistos, filepath =hpath)
+    if CPAR['signal_analysis'] == True:
+        SignalAnalysis(CSGN, CPAR, filepath =hpath)
 
-    if energy_analysis == True:
-        EnergyAnalysis(SE,CPLOT,saveHistos, filepath =hpath)
+    if CPAR['energy_analysis'] == True:
+        EnergyAnalysis(SE, CPAR, filepath =hpath)
 
-    if saveHistos == False or CPLOT['Histograms'] == False:
+    if CPAR['saveHistos'] == False or CPAR['Histograms'] == False:
         plt.show()
     
 
 if __name__ == '__main__':
 
     import cProfile
-    iset = 3  
-    frst_evt = 0
-    lst_evt = 100
-    path = "/Users/jjgomezcadenas/Documents/Development/NEXT/data/1ns/"
-    histoPath='/Users/jjgomezcadenas/Documents/Development/NEXT/WORK/EP/Signals/'
-    SADE(path,histoPath,iset,nmin=frst_evt,nmax=lst_evt, nsigma=1.0)
+    
+    SADE(path,histoPath,iset,nmin=frst_evt,nmax=lst_evt, nsigma=n_sigma)
     # cProfile.run('SADE(path,histoPath,iset,nmin=frst_evt,nmax=lst_evt, nsigma=1.0)', 
     #     sort='time')
 

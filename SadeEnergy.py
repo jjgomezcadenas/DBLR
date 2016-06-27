@@ -1,9 +1,8 @@
 """
-Energy calculations
+Energy classes
 """
-from PlotUtil import *
+from Util import *
 import numpy as np
-from scipy import signal as SGN
 
 class EnergyVectors:
     """
@@ -107,120 +106,135 @@ class SadeEnergy:
         self.epes25nsR = np.array(energyVectors.epes25nsR)
         self.nmean = nmean
         self.nsigma = nsigma
+        self.renergy25ns = MeanWOL(self.epes25ns,nmean=self.nmean, nsigma=self.nsigma)
+        self.renergy1ns = MeanWOL(self.epes1ns,nmean=self.nmean, nsigma=self.nsigma)
+        self.tenergy25ns = MeanWOL(self.q25ns,nmean=self.nmean, nsigma=self.nsigma)
+        self.tenergy1ns = MeanWOL(self.q1ns,nmean=self.nmean, nsigma=self.nsigma)
+        self.RTtoT25ns = MeanWOL(self.epes25nsR,nmean=self.nmean, nsigma=self.nsigma)
+        self.RTtoT1ns = MeanWOL(self.epes1nsR,nmean=self.nmean, nsigma=self.nsigma)
 
+    def AdcToPES(self, ebin='25ns'):
+        """
+        Returns the ratio ADC to PES
+        """
+        if ebin == '25ns':
+            return np.average(self.adcToPes25ns)
+        else:
+            return np.average(self.adcToPes1ns)
 
     def RecoveredEnergyInPES(self, ebin='25ns'):
+        """
+        Returns the recovered (reconstructed) energy in a window
+        of +- nsigma around the mean computed with the nmean first values
+        """
         if ebin == '25ns':
-            return MeanWOL(self.epes25ns,nmean=self.nmean, nsigma=self.nsigma)
+            return self.renergy25ns
         else:
-            return MeanWOL(self.epes1ns,nmean=self.nmean, nsigma=self.nsigma)
+            return self.renergy1ns
+
+    def RecoveredEnergyEff(self, ebin='25ns'):
+        """
+        Returns the fraction of events with reconstructed energy in a window
+        of +- nsigma around the mean computed with the nmean first values
+        """
+        if ebin == '25ns':
+            return len(self.renergy25ns)*1./len(self.epes25ns)
+        else:
+            return len(self.renergy1ns)*1./len(self.epes1ns)
 
     def RatioTrueToRecovered(self, ebin='25ns'):
+        """
+        Compute the difference ratio 2*abs(x1-x2)/(x1+x2)
+        between true and reconstructed energy in a window
+        of +- nsigma around the mean computed with the nmean first values
+        """
         if ebin == '25ns':
-            return MeanWOL(self.epes25nsR,nmean=self.nmean, nsigma=self.nsigma) 
+            return  self.RTtoT25ns
         else:
-            return MeanWOL(self.epes1nsR,nmean=self.nmean, nsigma=self.nsigma)
+            return self.RTtoT1ns
+
+    def RatioTrueToRecoveredEff(self, ebin='25ns'):
+        """
+        Returns the fraction of events with diff ratio in a window
+        of +- nsigma around the mean computed with the nmean first values
+        """
+        if ebin == '25ns':
+            return len(self.RTtoT25ns)*1./len(self.epes25nsR)
+        else:
+            return len(self.RTtoT1ns)*1./len(self.epes1nsR)
 
     def TrueEnergyInPES(self, ebin='25ns'):
+        """
+        Returns the true energy in a window
+        of +- nsigma around the mean computed with the nmean first values
+        """
         if ebin == '25ns':
-            return self.q25ns
+            return self.tenergy25ns
         else:
-            return self.q1ns
+            return self.tenergy1ns
+
+    def TrueEnergyEff(self, ebin='25ns'):
+        """
+        Returns the fraction of events with true energy in a window
+        of +- nsigma around the mean computed with the nmean first values
+        """
+        if ebin == '25ns':
+            return len(self.tenergy25ns)*1./len(self.q25ns)
+        else:
+            return len(self.tenergy1ns)*1./len(self.q1ns)
+            
 
     def __str__(self):    
         s= """
            Energy
+            adcToPES = %7.2f
 
-            Q: S2 MC (pes): 1 ns: avg = %7.2f, std = %7.2f
-            Q: S2 MC (pes): 25 ns: avg = %7.2f, std = %7.2f
-            Q: S2 PMT (adc): 1 ns: avg = %7.2f, std = %7.2f
-            Q: S2 PMT (adc): 25 ns: avg = %7.2f, std = %7.2f
-            QR: S2 MC 1/25 ns: avg = %7.2g, std = %7.2g
-            energy (adc) : avg = %7.2f, std = %7.2f
-            adcToPes (1 ns) : avg = %7.2f, std = %7.2f
-            adcToPes (25 ns) : avg = %7.2f, std = %7.2f
-            adcToPesR:  1/25 ns  : avg = %7.2g, std = %7.2g
-            energy (pes): 1 ns : avg = %7.2f, std = %7.2f
-            energy (pes): 25 ns : avg = %7.2f, std = %7.2f  
-            Energy to S2 MC: difference ratio (1ns) : avg = %7.2g, std = %7.2g
-            Energy to S2 MC: difference ratio (25ns) : avg = %7.2g, std = %7.2g
+            True Energy (1 ns) in pes
+            avg = %7.2f, std = %7.2f, 
+
+            True Energy in Window (1 ns) in pes
+            eff = %7.2f
+            avg = %7.2f, std = %7.2f, sigma_E/E (FWHM) = %7.2f
+
+            True Energy (25 ns) in pes
+            avg = %7.2f, std = %7.2f
+
+            True Energy in Window (25 ns) in pes
+            eff = %7.2f
+            avg = %7.2f, std = %7.2f, sigma_E/E (FWHM) = %7.2f
+
+            Recovered Energy in Window (25 ns) in pes
+            eff = %7.2f
+            avg = %7.2f, std = %7.2f, sigma_E/E (FWHM) = %7.2f
+
+            Ratio True to Recovered Energy in Window (25 ns) in pes
+            eff = %7.2f
+            avg = %7.2g, std = %7.2g 
+
            
-            """%(np.average(self.q1ns),np.std(self.q1ns),
+            """%(self.AdcToPES(ebin='25ns'),
+                np.average(self.q1ns),np.std(self.q1ns),
+                self.TrueEnergyEff(ebin='1ns'),
+                np.average(self.TrueEnergyInPES(ebin='1ns')),
+                np.std(self.TrueEnergyInPES(ebin='1ns')),
+                ResFWHM(np.std(self.TrueEnergyInPES(ebin='1ns')),
+                        np.average(self.TrueEnergyInPES(ebin='1ns'))),
                 np.average(self.q25ns),np.std(self.q25ns),
-                np.average(self.adc1ns),np.std(self.adc1ns),
-                np.average(self.adc25ns),np.std(self.adc25ns),
-                np.average(self.qR),np.std(self.qR),
-                np.average(self.eadc),np.std(self.eadc),
-                np.average(self.adcToPes1ns),np.std(self.adcToPes1ns),
-                np.average(self.adcToPes25ns),np.std(self.adcToPes25ns),
-                np.average(self.adcToPesR),np.std(self.adcToPesR),
-                np.average(self.epes1ns),np.std(self.epes1ns),
-                np.average(self.epes25ns),np.std(self.epes25ns),
-                np.average(self.epes1nsR),np.std(self.epes1nsR),
-                np.average(self.epes25nsR),np.std(self.epes25nsR))
+                self.TrueEnergyEff(ebin='25ns'),
+                np.average(self.TrueEnergyInPES(ebin='25ns')),
+                np.std(self.TrueEnergyInPES(ebin='25ns')),
+                ResFWHM(np.std(self.TrueEnergyInPES(ebin='25ns')),
+                        np.average(self.TrueEnergyInPES(ebin='25ns'))),
+                self.RecoveredEnergyEff(ebin='25ns'),
+                np.average(self.RecoveredEnergyInPES(ebin='25ns')),
+                np.std(self.RecoveredEnergyInPES(ebin='25ns')),
+                ResFWHM(np.std(self.RecoveredEnergyInPES(ebin='25ns')),
+                        np.average(self.RecoveredEnergyInPES(ebin='25ns'))),
+                self.RatioTrueToRecoveredEff(ebin='25ns'),
+                np.average(self.RatioTrueToRecovered(ebin='25ns')),
+                np.std(self.RatioTrueToRecovered(ebin='25ns')))
         return s
 
-
-def EnergyAnalysis(SE,CPLOT, saveHistos=False, filepath ="./"):
-    """
-    Takes an instance of Sade Energy
-    """
-
-    print """
-        Sade Energy = %s
-    """%(SE)
-
-    epes25ns = SE.RecoveredEnergyInPES(ebin='25ns')
-    
-    qr25ns = 1000*SE.RatioTrueToRecovered(ebin='25ns')
-    qr1ns = 1000*SE.RatioTrueToRecovered(ebin='1ns')
-
-    etrue25ns = SE.TrueEnergyInPES(ebin='25ns')
-    etrue1ns = SE.TrueEnergyInPES(ebin='1ns')
-
-    print """
-
-        energy vector length = %d
-
-        True Energy (MC only FANO): 25 ns
-        mean = %7.2f std = %7.2f, sigma_E/E (FWHM) = %7.2f
-
-        True Energy (MC only FANO): 1 ns
-        mean = %7.2f std = %7.2f, sigma_E/E (FWHM) = %7.2f 
-
-        Difference Ratio (x1000) = %7.2g
-
-        Reconstructed energy (in PES, 25 ns includes electronics noise, recovery)
-        mean = %7.2f std = %7.2f, sigma_E/E (FWHM) = %7.2f
-
-        Difference Ratio True to Recovered (25 ns) x 1000 = %7.2f
-        Difference Ratio True to Recovered (1 ns) x 1000 = %7.2f
-
-    """%(len(epes25ns), 
-         np.average(etrue25ns), np.std(etrue25ns),
-         ResFWHM(np.std(etrue25ns),np.average(etrue25ns)),
-         np.average(etrue1ns), np.std(etrue1ns),
-         ResFWHM(np.std(etrue1ns),np.average(etrue1ns)),
-         differenceRatio(np.average(etrue1ns),np.average(etrue25ns)),
-         np.average(epes25ns), np.std(epes25ns),
-         ResFWHM(np.std(epes25ns),np.average(epes25ns)),
-         np.average(qr25ns),
-         np.average(qr1ns)
-         )
-
-    if CPLOT['EnergyHistograms'] == True:
-
-        bins = hbins(etrue25ns, nsigma=5, nbins=20)
-        HSimple1(etrue25ns,bins,title="True energy in PES (25 ns)",xlabel = "pes",
-            save=saveHistos,filename='etrue25ns.png', filepath=filepath)
-
-        bins = hbins(epes25ns, nsigma=5, nbins=20)
-        HSimple1(epes25ns,bins,title="Recovered energy in PES (25 ns)",xlabel = "pes",
-            save=saveHistos,filename='epes25ns.png', filepath=filepath)
-
-        bins = hbins(qr25ns, nsigma=5, nbins=20)
-        HSimple1(qr25ns,bins,title="Rec ratio (25 ns)",xlabel = "",
-            save=saveHistos,filename='qr25ns.png', filepath=filepath)
 
 
     
