@@ -1,0 +1,164 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Jun 02 23:44:40 2016
+
+@author: viherbos
+"""
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy.optimize import curve_fit
+
+def line(x, A, B):
+    return A*x + B
+
+def gauss(x, A, mu, sigma):
+    return A * np.exp(-(x-mu)**2/(2.*sigma**2))
+
+def gauss2(x, *param):
+    return param[0] * np.exp(-(x-param[1])**2/(2.*param[2]**2)) + \
+           param[3] * np.exp(-(x-param[4])**2/(2.*param[5]**2))
+
+def gauss3(x, *param):
+    return param[0] * np.exp(-(x-param[1])**2/(2.*param[2]**2)) + \
+           param[3] * np.exp(-(x-param[4])**2/(2.*param[5]**2)) + \
+           param[6] * np.exp(-(x-param[7])**2/(2.*param[8]**2))
+
+
+def line_fit(f,X,f_sigma,x_text,y_text,title_text,n_figure,graph_sw):
+
+    #p0 = [1,(f[1]-f[0])/(X[1]-X[0])]
+    coeff, var_matrix = curve_fit(line, X, f)
+
+    #Parameters error eestimation (sigma). See numpty user guide
+    perr = np.sqrt(np.diag(var_matrix))
+
+    Y_fit = line(X,coeff[0],coeff[1])
+
+    XI2 = np.sum(((Y_fit-f)**2.)/(f_sigma**2.))
+    XI2_r = XI2/(len(X)-2)
+
+    if (graph_sw==1):
+    # Draws figure with all the properties
+        plt.clf()
+        plt.figure(n_figure)
+        plt.plot(X, Y_fit, 'r--', linewidth=1)
+        plt.errorbar(X, f, fmt='b*', yerr=f_sigma)
+        plt.xlabel(x_text)
+        plt.ylabel(y_text)
+        plt.title(title_text)
+        plt.show()
+        #Fit parameters
+    print 'Fitted A = ', coeff[0], '( Error_std=', perr[0],')'
+    print 'Fitted B = ', coeff[1], '( Error_std=', perr[1],')'
+
+    return coeff, perr, XI2_r
+
+
+def gauss1_fit(f,x_text,y_text,title_text,bins,n_figure,graph_sw):
+
+    hist, bin_edges = np.histogram(f, bins=bins)
+    bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
+
+    p0 = [1, np.mean(f), np.std(f)]
+    coeff, var_matrix = curve_fit(gauss, bin_centres, hist, p0=p0)
+
+    #Gets fitted function and residues
+    hist_fit = gauss(bin_centres, coeff[0],coeff[1],coeff[2])
+
+    #Parameters error eestimation (sigma). See numpty user guide
+    perr = np.sqrt(np.diag(var_matrix))
+
+    if (graph_sw==1):
+    # Draws figure with all the properties
+        plt.clf()
+        plt.figure(n_figure)
+        plt.hist(f, bins, facecolor='green')
+        plt.plot(bin_centres, hist_fit, 'r--', linewidth=1)
+        plt.grid(True)
+        plt.xlabel(x_text)
+        plt.ylabel(y_text)
+        plt.title(title_text)
+        plt.show()
+        #Fit parameters
+        print 'Fitted A = ', coeff[0], '( Error_std=', perr[0],')'
+        print 'Fitted MU = ', coeff[1], '( Error_std=', perr[1],')'
+        print 'FItted SIGMA = ', coeff[2], '( Error_std=', perr[2],')'
+
+    return coeff, perr
+
+
+def gauss2_fit(f,x_text,y_text,title_text,\
+               bins,mu_guess,\
+               n_figure,graph_sw):
+
+    hist, bin_edges = np.histogram(f, bins=bins)
+    bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
+
+    p0 = (1, mu_guess[0], 1, 1, mu_guess[1], 1)
+    coeff, var_matrix = curve_fit(gauss2, bin_centres, hist, p0=p0)
+
+    #Gets fitted function and residues
+    hist_fit = gauss2(bin_centres,*coeff)
+
+    #Parameters error eestimation (sigma). See numpty user guide
+    perr = np.sqrt(np.diag(var_matrix))
+
+    if (graph_sw==1):
+    # Draws figure with all the properties
+        plt.clf()
+        plt.figure(n_figure)
+        plt.hist(f, bins, facecolor='green')
+        plt.plot(bin_centres, hist_fit, 'r--', linewidth=1)
+        plt.grid(True)
+        plt.xlabel(x_text)
+        plt.ylabel(y_text)
+        plt.title(title_text)
+        plt.show()
+        #Fit parameters
+        print 'Fitted A1 = ', coeff[0], '( Error_std=', perr[0],')'
+        print 'Fitted MU1 = ', coeff[1], '( Error_std=', perr[1],')'
+        print 'FItted SIGMA1 = ', coeff[2], '( Error_std=', perr[2],')'
+        print 'Fitted A2 = ', coeff[3], '( Error_std=', perr[3],')'
+        print 'Fitted MU2 = ', coeff[4], '( Error_std=', perr[4],')'
+        print 'FItted SIGMA2 = ', coeff[5], '( Error_std=', perr[5],')'
+
+    return coeff, perr
+
+def gauss3_fit(f,x_text,y_text,title_text,\
+               bins,mu_guess,\
+               n_figure,graph_sw):
+
+    hist, bin_edges = np.histogram(f, bins=bins)
+    bin_centres = (bin_edges[:-1] + bin_edges[1:])/2
+
+    p_guess = (1, mu_guess[0], 1, 1, mu_guess[1], 1, 1, mu_guess[2], 1)
+    coeff, var_matrix = curve_fit(gauss3, bin_centres, hist, p0=p_guess)
+
+    #Gets fitted function and residues
+    hist_fit = gauss3(bin_centres,*coeff)
+
+    #Parameters error eestimation (sigma). See numpty user guide
+    perr = np.sqrt(np.diag(var_matrix))
+
+    if (graph_sw==1):
+    # Draws figure with all the properties
+        plt.clf()
+        plt.figure(n_figure)
+        plt.hist(f, bins, facecolor='green')
+        plt.plot(bin_centres, hist_fit, 'r--', linewidth=1)
+        plt.grid(True)
+        plt.xlabel(x_text)
+        plt.ylabel(y_text)
+        plt.title(title_text)
+        plt.show()
+        #Fit parameters
+        print 'Fitted A1 = ', coeff[0], '( Error_std=', perr[0],')'
+        print 'Fitted MU1 = ', coeff[1], '( Error_std=', perr[1],')'
+        print 'FItted SIGMA1 = ', coeff[2], '( Error_std=', perr[2],')'
+        print 'Fitted A2 = ', coeff[3], '( Error_std=', perr[3],')'
+        print 'Fitted MU2 = ', coeff[4], '( Error_std=', perr[4],')'
+        print 'FItted SIGMA2 = ', coeff[5], '( Error_std=', perr[5],')'
+        print 'Fitted A3 = ', coeff[3], '( Error_std=', perr[6],')'
+        print 'Fitted MU3 = ', coeff[4], '( Error_std=', perr[7],')'
+        print 'FItted SIGMA3 = ', coeff[5], '( Error_std=', perr[8],')'
+    return coeff, perr

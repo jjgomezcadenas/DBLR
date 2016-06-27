@@ -153,7 +153,8 @@ def SADE(path,histoPath,iset,nmin=0,nmax=100, nsigma=2):
         # print "calling MauDeconv"
    
         signal_dec, eadc = DB.BLR(signal_daq, coef, n_sigma = nsigma, 
-                            NOISE_ADC=FP.NOISE_FEE_rms/FP.voltsToAdc, plot=False)
+                            NOISE_ADC=FP.NOISE_FEE_rms/FP.voltsToAdc, 
+                            plot=CPAR['plot_BLR'])
 
         DSGN['spe_I'] = Signal('spe_I',t_spe, pulse_spe, threshold = 1e-6*muA)
         DSGN['spe_V'] = Signal('spe_V',t_spe, signal_spe,threshold = 1e-6*mV)
