@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 from scipy.optimize import curve_fit
 
 
+
 # Fitting functions definition
 def line(x, A, B):
     return A*x + B
@@ -59,8 +60,8 @@ def line_fit(f,X,f_sigma,x_text,y_text,title_text,n_figure,graph_sw):
         plt.title(title_text)
         plt.show(block=False)
         #Fit parameters
-    print 'Fitted A = ', coeff[0], '( Error_std=', perr[0],')'
-    print 'Fitted B = ', coeff[1], '( Error_std=', perr[1],')'
+    print ('Fitted A = ', coeff[0], '( Error_std=', perr[0],')')
+    print ('Fitted B = ', coeff[1], '( Error_std=', perr[1],')')
 
     return coeff, perr, XI2_r
 
@@ -94,11 +95,13 @@ def gauss1_fit(f,x_text,y_text,title_text,bins,n_figure,graph_sw):
         plt.xlabel(x_text)
         plt.ylabel(y_text)
         plt.title(title_text)
-        plt.show()
+        plt.figtext(0.2,0.75, ('Fitted MU = %0.3f ( Error_std = %0.3f)' % (coeff[1] , perr[1])))
+        plt.figtext(0.2,0.7, ('Fitted SIGMA = %0.3f ( Error_std = %0.3f)' % (coeff[2] , perr[2])))
+        plt.show(block=False)
         #Fit parameters
-        print 'Fitted A = ', coeff[0], '( Error_std=', perr[0],')'
-        print 'Fitted MU = ', coeff[1], '( Error_std=', perr[1],')'
-        print 'FItted SIGMA = ', coeff[2], '( Error_std=', perr[2],')'
+        print ('Fitted A = ', coeff[0], '( Error_std=', perr[0],')')
+        print ('Fitted MU = ', coeff[1], '( Error_std=', perr[1],')')
+        print ('FItted SIGMA = ', coeff[2], '( Error_std=', perr[2],')')
 
     return coeff, perr
 
@@ -134,14 +137,16 @@ def gauss2_fit(f,x_text,y_text,title_text,\
         plt.xlabel(x_text)
         plt.ylabel(y_text)
         plt.title(title_text)
-        plt.show()
+        plt.figtext(0.2,0.8, ('Fitted MU1 = %0.3f ( Error_std = %0.3f)' % (coeff[1] , perr[1])))
+        plt.figtext(0.2,0.75, ('Fitted MU2 = %0.3f ( Error_std = %0.3f)' % (coeff[4] , perr[4])))
+        plt.show(block=False)
         #Fit parameters
-        print 'Fitted A1 = ', coeff[0], '( Error_std=', perr[0],')'
-        print 'Fitted MU1 = ', coeff[1], '( Error_std=', perr[1],')'
-        print 'FItted SIGMA1 = ', coeff[2], '( Error_std=', perr[2],')'
-        print 'Fitted A2 = ', coeff[3], '( Error_std=', perr[3],')'
-        print 'Fitted MU2 = ', coeff[4], '( Error_std=', perr[4],')'
-        print 'FItted SIGMA2 = ', coeff[5], '( Error_std=', perr[5],')'
+        print ('Fitted A1 = ', coeff[0], '( Error_std=', perr[0],')')
+        print ('Fitted MU1 = ', coeff[1], '( Error_std=', perr[1],')')
+        print ('FItted SIGMA1 = ', coeff[2], '( Error_std=', perr[2],')')
+        print ('Fitted A2 = ', coeff[3], '( Error_std=', perr[3],')')
+        print ('Fitted MU2 = ', coeff[4], '( Error_std=', perr[4],')')
+        print ('Fitted SIGMA2 = ', coeff[5], '( Error_std=', perr[5],')')
 
     return coeff, perr
 
@@ -177,15 +182,18 @@ def gauss3_fit(f,x_text,y_text,title_text,\
         plt.xlabel(x_text)
         plt.ylabel(y_text)
         plt.title(title_text)
-        plt.show()
+        plt.figtext(0.2,0.8, ('Fitted MU1 = %0.3f ( Error_std = %0.3f)' % (coeff[1] , perr[1])))
+        plt.figtext(0.2,0.75, ('Fitted MU2 = %0.3f ( Error_std = %0.3f)' % (coeff[4] , perr[4])))
+        plt.figtext(0.2,0.7, ('Fitted MU3 = %0.3f ( Error_std = %0.3f)' % (coeff[7] , perr[7])))
+        plt.show(block=False)
         #Fit parameters
-        print 'Fitted A1 = ', coeff[0], '( Error_std=', perr[0],')'
-        print 'Fitted MU1 = ', coeff[1], '( Error_std=', perr[1],')'
-        print 'FItted SIGMA1 = ', coeff[2], '( Error_std=', perr[2],')'
-        print 'Fitted A2 = ', coeff[3], '( Error_std=', perr[3],')'
-        print 'Fitted MU2 = ', coeff[4], '( Error_std=', perr[4],')'
-        print 'FItted SIGMA2 = ', coeff[5], '( Error_std=', perr[5],')'
-        print 'Fitted A3 = ', coeff[3], '( Error_std=', perr[6],')'
-        print 'Fitted MU3 = ', coeff[4], '( Error_std=', perr[7],')'
-        print 'FItted SIGMA3 = ', coeff[5], '( Error_std=', perr[8],')'
+        print ('Fitted A1 = ', coeff[0], '( Error_std=', perr[0],')')
+        print ('Fitted MU1 = ', coeff[1], '( Error_std=', perr[1],')')
+        print ('FItted SIGMA1 = ', coeff[2], '( Error_std=', perr[2],')')
+        print ('Fitted A2 = ', coeff[3], '( Error_std=', perr[3],')')
+        print ('Fitted MU2 = ', coeff[4], '( Error_std=', perr[4],')')
+        print ('FItted SIGMA2 = ', coeff[5], '( Error_std=', perr[5],')')
+        print ('Fitted A3 = ', coeff[6], '( Error_std=', perr[6],')')
+        print ('Fitted MU3 = ', coeff[7], '( Error_std=', perr[7],')')
+        print ('Fitted SIGMA3 = ', coeff[7], '( Error_std=', perr[8],')')
     return coeff, perr
