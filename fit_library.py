@@ -58,6 +58,7 @@ def line_fit(f,X,f_sigma,x_text,y_text,title_text,n_figure,graph_sw):
         plt.xlabel(x_text)
         plt.ylabel(y_text)
         plt.title(title_text)
+        plt.figtext(0.2,0.75, ('CHI2_r = %0.3f ' % (XI2_r)))
         plt.show(block=False)
         #Fit parameters
     print ('Fitted A = ', coeff[0], '( Error_std=', perr[0],')')

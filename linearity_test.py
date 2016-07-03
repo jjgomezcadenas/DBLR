@@ -39,7 +39,7 @@ def linearity_test(base_path, init_point, end_point, step, n_meas, coef, noise,
 
 
 	########################################################################
-	n_points = (end_point-init_point)/step+1
+	n_points = int((end_point-init_point)/step+1)
 	energia_m     = np.zeros(n_points)
 	energia_sigma = np.zeros(n_points)
 	energia_aux   = np.zeros(n_meas)
@@ -65,7 +65,7 @@ def linearity_test(base_path, init_point, end_point, step, n_meas, coef, noise,
 		energia_sigma[a] = np.std(energia_aux/(SPE_DAQ*FEP.sampling_DAQ()),ddof=1)
 		a=a+1
 		if (graph_sw == 1):
-			print energia_m
+			print(energia_m)
 
 	X=np.linspace(init_point,end_point,n_points)
 
@@ -79,7 +79,7 @@ def linearity_test(base_path, init_point, end_point, step, n_meas, coef, noise,
 		#Plots fit results for a point by point test
 		plt.errorbar(X,energia_m,fmt='b*',yerr=energia_sigma)
 		plt.plot(X,line(X,coeff[0],coeff[1]))
-		print 'CHI_SQUARE_REDUCED =',XI2_r
+		print('CHI_SQUARE_REDUCED =',XI2_r)
 
 	return coeff, perr, XI2_r
 
@@ -92,11 +92,11 @@ def main():
 	n_meas     = 20
 	inc_point  = 3
 	#PATH
-	base_path = 'F:/DATOS_DAC/2052/pmt_0_trace_evt_'
+	base_path = 'D:/DATOS_DAC/2052/pmt_0_trace_evt_'
 
 	coeff, perr, XI2_r = linearity_test(base_path, init_point, end_point,
 							 step, n_meas, 1.636E-3, 0.75,
-						       40, 20.5,inc_point,0)
+						       40, 20.5,inc_point,1)
 
 if __name__ == "__main__":
 	main()
