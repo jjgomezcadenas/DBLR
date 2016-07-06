@@ -6,10 +6,11 @@ Created on Thu Jun 02 23:44:40 2016
 """
 import numpy as np
 import pandas as pd
+from signal_to_hdf5 import read_hdf5
 from fit_library import gauss2_fit
 
 
-def find_SPE(base_path, n_files, start, end, bins, guess, n_figure):
+def find_SPE_h5(base_path, n_files, start, end, bins, guess, n_figure):
 	# This is a basic function build to find the value of the SPE.
 	# PARAMETERS:
 	#base_path: Base path including the name of the file, number not included (see main)
@@ -34,12 +35,9 @@ def find_SPE(base_path, n_files, start, end, bins, guess, n_figure):
 	integral_r = np.zeros(n_files,float)
 
 	# Party time !!!
-	for x in range(1, n_files):
-		# Read all the files in the dataset
-		path=''.join([base_path,str(x),'.txt'])
-		g=pd.read_csv(path)
-		f=g.values
-		#Get rid of the BASELINE (mean)
+	for x in range(1, n_files+1):
+
+		f = read_hdf5(base_path,x-1,0)
 		media=np.mean(f)
 		f = f[start:end] - media
 		#Integrate the SPE (beware of the sampling period)
@@ -52,8 +50,8 @@ def find_SPE(base_path, n_files, start, end, bins, guess, n_figure):
 
 
 def main():
-	base_path = 'D:/DATOS_DAC/spe_1230/2046/pmt_0_trace_evt_'
-	n_files   = 5000
+	base_path = 'spe_1230_2046.h5.z'
+	n_files   = 500
 	#INTEGRATING RANGE
 	start=(43.3*40)
 	end  =(43.8*40)
@@ -61,7 +59,7 @@ def main():
 	guess = -20
 	n_figure = 1
 
-	a,b=find_SPE(base_path, n_files, start, end, bins, guess, n_figure=1)
+	a,b=find_SPE_h5(base_path, n_files, start, end, bins, guess, n_figure=1)
 
 if __name__ == "__main__":
 	main()
